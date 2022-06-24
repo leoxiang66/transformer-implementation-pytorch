@@ -1,4 +1,6 @@
-*.py
-*.py
+model.py
+tmp.py
+*.pyc
 .idea
 tmp.txt
+test.ipynb
