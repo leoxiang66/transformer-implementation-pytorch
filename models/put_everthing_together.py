@@ -90,7 +90,7 @@ class EncoderLayer(nn.Module):
     def forward(self, x,attention_mask):
         '''
 
-        :param x: shape (N,L,D) N is batch size, L is the length of the sequnce, D is the dimension of word embeddings
+        :param x: shape (N,L,D) N is batch size, L is the length of the sequence, D is the dimension of word embeddings
         :param attention_mask: (N,L)
         :return: shape (N,L,D)
         '''
@@ -299,8 +299,7 @@ class ClassificationLayer(nn.Module):
         x = self.act(x)
         logits = self.ln2(x) # (N,L,dout)
         logits = self.drop(logits)
-        probs = nn.Softmax(-1)(logits)
-        return probs
+        return logits
 
 
 class Encoder(nn.Module):
@@ -359,5 +358,24 @@ class Transformer(nn.Module):
         '''
         enc_output = self.encoder(enc_input,enc_att_mask)
         dec_output = self.decoder(dec_input,enc_output,dec_att_mask,enc_att_mask)
-        probs = self.clf(dec_output)
-        return probs
+        logits = self.clf(dec_output)
+        return logits
+
+
+class Loss(object):
+    def __init__(self,weight=None, size_average=None, ignore_index=- 100, reduce=None, reduction='mean', label_smoothing=0.0) -> None:
+        super().__init__()
+        self.CE = nn.CrossEntropyLoss(weight,size_average,ignore_index,reduce,reduction,label_smoothing)
+
+    def __call__(self, dec_output, labels):
+        '''
+
+        :param dec_output: (N,L,n_labels): unnormalized logits
+        :param labels: (N,L): class indices
+        :return:
+        '''
+
+        dec_ouput = dec_output.view(-1,dec_output.size(-1)) # (N*L,n_labels)
+        labels = labels.view(-1)    # (N*L)
+        return self.CE(dec_ouput,labels)
+
