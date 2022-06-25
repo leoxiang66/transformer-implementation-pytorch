@@ -379,3 +379,4 @@ class Loss(object):
         labels = labels.view(-1)    # (N*L)
         return self.CE(dec_ouput,labels)
 
+
