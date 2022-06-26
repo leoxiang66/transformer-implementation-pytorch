@@ -284,8 +284,8 @@ class ClassificationLayer(nn.Module):
         super().__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.ln1 = nn.Linear(input_dim,input_dim*2)
-        self.ln2 = nn.Linear(input_dim*2,output_dim)
+        self.ln1 = nn.Linear(input_dim,input_dim*4)
+        self.ln2 = nn.Linear(input_dim*4,output_dim)
         self.act = nn.ReLU()
         self.drop =nn.Dropout(0.2)
 
@@ -325,7 +325,7 @@ class Decoder(nn.Module):
         super().__init__()
         self.n_layers = n_layers
         self.layers = nn.ModuleList([DecoderLayer(hidden_dim) for _ in range(n_layers)])
-    def forward(self,x1,x2,enc_att_mask,dec_att_mask):
+    def forward(self,x1,x2,dec_att_mask,enc_att_mask):
         '''
 
         :param x1: decoder input: (N,L1,D)
@@ -337,7 +337,7 @@ class Decoder(nn.Module):
 
         tmp = x1
         for f in self.layers:
-            tmp = f.forward(tmp,x2,enc_att_mask,dec_att_mask)
+            tmp = f.forward(tmp,x2,dec_att_mask,enc_att_mask)
         return tmp
 
 class Transformer(nn.Module):
@@ -378,5 +378,36 @@ class Loss(object):
         dec_ouput = dec_output.view(-1,dec_output.size(-1)) # (N*L,n_labels)
         labels = labels.view(-1)    # (N*L)
         return self.CE(dec_ouput,labels)
+
+
+
+def trf_inference(trf, enc_input, bos,eos,enc_att_mask,word_embedding):
+    '''
+
+    :param trf: the transformer model
+    :param enc_input: (1,L,D)
+    :param bos: , e.g. '<bos>'
+    :param eos: end of sentence token e.g. '<eos>'
+    :param enc_att_mask: (1,L)
+    :param word_embedding: initial word embedding model
+    :return: (1,l*,D)
+    '''
+    enc_outputs = trf.encoder(enc_input,enc_att_mask) # (1,L,D)
+    current_sequence = bos
+    tmp = word_embedding.get_word_embed_without_cls_sep_tokens(current_sequence)[0]  # (1, 1, D)
+    predicted_token = bos
+    N = tmp.size(0)
+    while predicted_token != eos:
+        l_tmp = tmp.size(1)
+        dec_att_mask = torch.ones((N,l_tmp),dtype=torch.int32)
+        dec_output = trf.decoder(tmp,enc_outputs,dec_att_mask,enc_att_mask)
+        trf_logits = trf.clf(dec_output) # (1,l_tmp,n_labels)
+        predicted_token =word_embedding.tokenizer.convert_ids_to_tokens(torch.argmax(trf_logits[0,-1,:],dim=-1).squeeze())
+
+        current_sequence += ' '
+        current_sequence += predicted_token
+        tmp = word_embedding.get_word_embed_without_cls_sep_tokens(current_sequence)[0]  # (1, l*, D)
+
+    return current_sequence
 
 

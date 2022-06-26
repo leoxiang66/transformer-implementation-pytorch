@@ -5,7 +5,7 @@ class Decoder(nn.Module):
         super().__init__()
         self.n_layers = n_layers
         self.layers = nn.ModuleList([DecoderLayer(hidden_dim) for _ in range(n_layers)])
-    def forward(self,x1,x2,enc_att_mask,dec_att_mask):
+    def forward(self,x1,x2,dec_att_mask,enc_att_mask):
         '''
 
         :param x1: decoder input: (N,L1,D)
@@ -17,5 +17,5 @@ class Decoder(nn.Module):
 
         tmp = x1
         for f in self.layers:
-            tmp = f.forward(tmp,x2,enc_att_mask,dec_att_mask)
+            tmp = f.forward(tmp,x2,dec_att_mask,enc_att_mask)
         return tmp
