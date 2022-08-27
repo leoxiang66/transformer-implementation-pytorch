@@ -4,3 +4,7 @@ tmp.py
 .idea
 tmp.txt
 test.ipynb
+
+build
+dist
+transformer_implementation_pytorch.egg-info
