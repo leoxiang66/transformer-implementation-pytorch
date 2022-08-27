@@ -1,4 +1,4 @@
-from put_everthing_together import *
+from models.layers import *
 class Transformer(nn.Module):
     def __init__(self,n_layers,hidden_dim,n_labels) -> None:
         super().__init__()

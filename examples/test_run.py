@@ -1,6 +1,6 @@
 import torch
 import torch.utils.data as data
-from put_everthing_together import *
+from models.layers import *
 import torch.optim as optim
 
 num_labels = 10
